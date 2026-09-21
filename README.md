@@ -107,7 +107,21 @@ node src/check.js    --repo ../kgjs --schema <kg.strict.schema.json> --bundle ..
 node src/refcheck.js --repo ../kgjs graph.yml
 ```
 
-## Next
+## The generator
 
-The generator. The loop is: describe, generate, run both checkers, feed any failure back, repeat.
-The checkers are the part that makes that loop trustworthy, which is why they came first.
+`src/generate.py` turns a description into KGJS YAML. It retrieves the four closest examples
+from the corpus by TF-IDF over their descriptions, prompts with those, and then runs the result
+through both checkers. Any failure is turned into an instruction and handed back to the model,
+up to `--attempts` times. It reports whether it succeeded or ran out of attempts; it does not
+claim success it did not get.
+
+```bash
+export OPENAI_API_KEY=...
+python3 src/generate.py "a supply and demand graph where demand shifts right" \
+    --repo ../kgjs --schema <kg.strict.schema.json> \
+    --bundle ../kgjs/docs/js/kg.0.3.3.js --out graph.yml
+```
+
+`--eval N` runs it against N held-out examples from the docs corpus, excluding each item from
+its own retrieval, and reports how many produced a graph that passes every check and how many
+needed repair.
